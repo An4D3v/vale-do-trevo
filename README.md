@@ -3,7 +3,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)
 ![Canvas API](https://img.shields.io/badge/Canvas_2D-puro-3e8948)
-![Status](https://img.shields.io/badge/cap%C3%ADtulo_1-jog%C3%A1vel-4caf50)
+![Status](https://img.shields.io/badge/2_cap%C3%ADtulos-jog%C3%A1veis-4caf50)
 
 Jogo 2D top-down com estética de **desenho feito à mão** — contornos tremidos, cores de canetinha e papel de fundo, como se o mundo inteiro tivesse saído de um caderno. Sem engine, sem sprites: **tudo é desenhado em código, traço a traço, no Canvas 2D**.
 
@@ -27,6 +27,8 @@ Jogo 2D top-down com estética de **desenho feito à mão** — contornos tremid
 
 Um borrão de tinta gigante passou pelo vale espirrando manchas por tudo que é lado — e os **6 trevos da sorte** se espalharam. Sem eles, as cores do vale vão desbotando. **Nino**, o ninja do bastão de lacinho, precisa recuperá-los: alguns estão perdidos pela floresta, outros ficaram com os **borrõezinhos** que rondam as pedras do sul. A raposa **Canela** orienta a missão; a **Dona Lesma** comenta tudo do jeito dela (bem devagar).
 
+E quando os trevos voltam pra casa... o chão treme. No **capítulo 2**, uma passagem se abre no fundo das pedras do sul, descendo para a caverna de onde toda a tinta veio — e a resposta lá embaixo não é bem um monstro.
+
 ## Como jogar
 
 | ação | desktop | celular |
@@ -45,7 +47,9 @@ Trevos são coletados passando por cima. Encostar num borrão custa um coração
 - ⚔️ **Combate corpo a corpo** com arco de golpe, knockback, frames de invencibilidade e respawn justo (o borrão não renasce em cima de você)
 - ✍️ **Motor de rabisco próprio**: cada forma é traçada com jitter determinístico por seed, e o traço "ferve" a ~5 fps como animação de caderno
 - 📱 **Controles de toque** com direcional virtual, multi-touch e alvos generosos pro dedo
-- 🏆 Missão completa com celebração, recorde de história e "fim do capítulo 1"
+- 🌈 **Evolução da amizade**: a bandana da Canela percorre o arco-íris conforme o laço com o Nino cresce
+- 🕳️ **Capítulo 2**: caverna subterrânea, luta contra o **Borrão-Mor** (com barra de vida e lacaios) e um desfecho sobre amizade em vez de violência
+- 🏆 Dois capítulos completos, com celebração e moradora nova na vila
 
 ## Arquitetura
 
@@ -78,11 +82,12 @@ Abra `http://localhost:5173` (ou a porta que o Vite indicar). Com `?debug=1` na 
 
 ## Roadmap
 
+- [x] "Evolução" da Canela (mecânica de amizade inspirada nas setas arco-íris do desenho original)
+- [x] Capítulo 2: de onde veio o borrão gigante?
 - [ ] Sons (passos, bastão, coleta, falas)
 - [ ] Save de progresso no navegador
-- [ ] "Evolução" da Canela (mecânica de amizade inspirada nas setas arco-íris do desenho original)
-- [ ] Capítulo 2: de onde veio o borrão gigante?
 - [ ] Interiores das casas e mais moradores no vale
+- [ ] Capítulo 3: quem riscou o desenho do Borrão-Mor?
 
 ## Autoria
 

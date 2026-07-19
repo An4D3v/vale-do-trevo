@@ -1,9 +1,9 @@
 // os personagens, desenhados à mão em canvas a partir da arte original:
 // nino (ninja gorducho de trevo na cabeça) e canela (raposa de bandana).
 
-import { PAL, AMIZADE_CORES } from './constants'
+import { PAL, AMIZADE_CORES, GOTA_COLOR, BOSS_HP } from './constants'
 import { sketchEllipse, sketchPoly, sketchRect, sketchLine, rng } from './sketch'
-import type { Facing } from './types'
+import type { Facing, BossState, Speaker } from './types'
 
 /** trevo de 4 folhas (item e enfeite do nino) */
 export function drawClover(ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number, seed: number) {
@@ -314,15 +314,114 @@ export function drawBlob(ctx: CanvasRenderingContext2D, x: number, y: number, t:
   ctx.restore()
 }
 
+/** o borrão-mor: o chefão de tinta da caverna (capítulo 2) */
+export function drawBorraoMor(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  t: number,
+  seed: number,
+  state: BossState,
+  hp: number,
+  lookX: number,
+  showBar: boolean,
+) {
+  const squash = 1 + Math.sin(t * 4 + seed) * 0.05
+  const tremor = state === 'stun' ? Math.sin(t * 60) * 2 : 0
+  ctx.save()
+  ctx.translate(x + tremor, y)
+  ctx.fillStyle = 'rgba(74,68,60,0.18)'
+  ctx.beginPath()
+  ctx.ellipse(0, 2, 44, 12, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.scale(squash, 2 - squash)
+  // corpo: três bolhas GRANDES de tinta
+  sketchEllipse(ctx, 0, -34, 44, 35, seed, PAL.blob, PAL.blobDark, 3.2)
+  sketchEllipse(ctx, -25, -50, 18, 14, seed + 1, PAL.blob, null)
+  sketchEllipse(ctx, 23, -54, 16, 13, seed + 2, PAL.blob, null)
+  // gotas escorrendo
+  for (let i = 0; i < 4; i++) {
+    const gx = -26 + i * 17 + Math.sin(t * 2 + i * 2) * 3
+    sketchEllipse(ctx, gx, -5 + (i % 2) * 4, 4.5, 7, seed + 3 + i, PAL.blob, null)
+  }
+  // olhões
+  const dx = Math.max(-6, Math.min(6, lookX))
+  ctx.fillStyle = '#ffffff'
+  ctx.beginPath()
+  ctx.ellipse(-14, -40, 10, 12.5, 0, 0, Math.PI * 2)
+  ctx.ellipse(14, -40, 10, 12.5, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.fillStyle = PAL.blobDark
+  ctx.beginPath()
+  ctx.arc(-14 + dx, -38, 4.4, 0, Math.PI * 2)
+  ctx.arc(14 + dx, -38, 4.4, 0, Math.PI * 2)
+  ctx.fill()
+  if (state === 'defeated' || state === 'friend') {
+    // sobrancelhas tristes + lágrimas de tinta azulada
+    sketchLine(ctx, -22, -56, -7, -51, seed + 10, PAL.pencil, 2.2, 0.6)
+    sketchLine(ctx, 7, -51, 22, -56, seed + 11, PAL.pencil, 2.2, 0.6)
+    ctx.strokeStyle = PAL.waterLine
+    ctx.lineWidth = 2.8
+    ctx.lineCap = 'round'
+    for (const s of [-1, 1]) {
+      ctx.beginPath()
+      ctx.moveTo(s * 14, -28)
+      ctx.quadraticCurveTo(s * 17, -18 + Math.sin(t * 3) * 2, s * 14, -8)
+      ctx.stroke()
+    }
+  } else {
+    // sobrancelhas bravas
+    sketchLine(ctx, -23, -58, -6, -52, seed + 10, PAL.pencil, 3, 0.6)
+    sketchLine(ctx, 6, -52, 23, -58, seed + 11, PAL.pencil, 3, 0.6)
+  }
+  ctx.restore()
+
+  // barra de vida (fora do squash), só durante a briga
+  if (showBar) {
+    const w = 92
+    const bx = x - w / 2
+    const by = y - 96
+    ctx.fillStyle = PAL.banner
+    ctx.fillRect(bx, by, w, 9)
+    ctx.fillStyle = PAL.blob
+    ctx.fillRect(bx + 1.5, by + 1.5, (w - 3) * Math.max(0, hp / BOSS_HP), 6)
+    ctx.strokeStyle = PAL.pencil
+    ctx.lineWidth = 1.6
+    ctx.strokeRect(bx, by, w, 9)
+  }
+}
+
+/** a gota: o borrão-mor depois de acolhido — pequenininha, lilás e com um trevo na cabeça */
+export function drawGota(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, seed = 4) {
+  const squash = 1 + Math.sin(t * 3 + seed) * 0.06
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.fillStyle = 'rgba(74,68,60,0.12)'
+  ctx.beginPath()
+  ctx.ellipse(0, 1, 11, 4, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.scale(squash, 2 - squash)
+  sketchEllipse(ctx, 0, -10, 11, 10, seed, GOTA_COLOR, PAL.pencil, 2)
+  sketchEllipse(ctx, -6, -14, 5, 4, seed + 1, GOTA_COLOR, null)
+  // olhinhos felizes (arquinhos)
+  sketchLine(ctx, -6.5, -11.5, -2.5, -12.5, seed + 2, PAL.pencil, 1.6, 0.5)
+  sketchLine(ctx, 2.5, -12.5, 6.5, -11.5, seed + 3, PAL.pencil, 1.6, 0.5)
+  // bochechinhas
+  ctx.globalAlpha = 0.55
+  ctx.fillStyle = PAL.ninoBlush
+  ctx.beginPath()
+  ctx.arc(-7.5, -8.5, 1.6, 0, Math.PI * 2)
+  ctx.arc(7.5, -8.5, 1.6, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.globalAlpha = 1
+  ctx.restore()
+  // trevinho na cabeça (presente do nino)
+  drawClover(ctx, x + 1, y - 26 + Math.sin(t * 3 + seed) * 1.2, 5, seed + 5)
+}
+
 // ---- retratos p/ caixa de diálogo ----
 
-export function drawPortrait(
-  ctx: CanvasRenderingContext2D,
-  who: 'nino' | 'canela' | 'lesma',
-  cx: number,
-  cy: number,
-  amizade = 5,
-) {
+export function drawPortrait(ctx: CanvasRenderingContext2D, who: Speaker, cx: number, cy: number, amizade = 5) {
   ctx.save()
   // moldura circular de papel
   sketchEllipse(ctx, cx, cy, 26, 26, 40, '#ffffff', PAL.pencil, 2.2)
@@ -359,7 +458,7 @@ export function drawPortrait(
     ctx.arc(cx + 6, cy + 1, 1.8, 0, Math.PI * 2)
     ctx.arc(cx, cy + 6, 2, 0, Math.PI * 2)
     ctx.fill()
-  } else {
+  } else if (who === 'lesma') {
     sketchEllipse(ctx, cx + 2, cy + 12, 16, 8, 50, PAL.snailBody, PAL.pencil, 1.8)
     sketchEllipse(ctx, cx - 4, cy, 13, 12, 51, PAL.snailShell, PAL.pencil, 2)
     sketchLine(ctx, cx + 10, cy - 2, cx + 8, cy - 12, 52, PAL.pencil, 1.6, 0.6)
@@ -369,6 +468,37 @@ export function drawPortrait(
     ctx.arc(cx + 8, cy - 12, 1.4, 0, Math.PI * 2)
     ctx.arc(cx + 16, cy - 12, 1.4, 0, Math.PI * 2)
     ctx.fill()
+  } else if (who === 'borrao') {
+    // o chefão: bolhas de tinta com olhões tristes
+    sketchEllipse(ctx, cx, cy + 6, 20, 17, 54, PAL.blob, PAL.blobDark, 2.4)
+    sketchEllipse(ctx, cx - 11, cy - 4, 8, 6, 55, PAL.blob, null)
+    sketchEllipse(ctx, cx + 10, cy - 6, 7, 5, 56, PAL.blob, null)
+    ctx.fillStyle = '#ffffff'
+    ctx.beginPath()
+    ctx.ellipse(cx - 6, cy + 2, 4.6, 5.8, 0, 0, Math.PI * 2)
+    ctx.ellipse(cx + 6, cy + 2, 4.6, 5.8, 0, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillStyle = PAL.blobDark
+    ctx.beginPath()
+    ctx.arc(cx - 6, cy + 3, 2, 0, Math.PI * 2)
+    ctx.arc(cx + 6, cy + 3, 2, 0, Math.PI * 2)
+    ctx.fill()
+    sketchLine(ctx, cx - 10, cy - 5, cx - 3, cy - 2, 57, PAL.pencil, 1.8, 0.5)
+    sketchLine(ctx, cx + 3, cy - 2, cx + 10, cy - 5, 58, PAL.pencil, 1.8, 0.5)
+  } else {
+    // gota: a versão acolhida, lilás e sorridente
+    sketchEllipse(ctx, cx, cy + 6, 16, 14, 59, GOTA_COLOR, PAL.pencil, 2.2)
+    sketchEllipse(ctx, cx - 8, cy - 2, 6, 5, 60, GOTA_COLOR, null)
+    sketchLine(ctx, cx - 9, cy + 2, cx - 3, cy + 0.5, 61, PAL.pencil, 1.8, 0.5)
+    sketchLine(ctx, cx + 3, cy + 0.5, cx + 9, cy + 2, 62, PAL.pencil, 1.8, 0.5)
+    ctx.globalAlpha = 0.55
+    ctx.fillStyle = PAL.ninoBlush
+    ctx.beginPath()
+    ctx.arc(cx - 11, cy + 6, 2.2, 0, Math.PI * 2)
+    ctx.arc(cx + 11, cy + 6, 2.2, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.globalAlpha = 1
+    drawClover(ctx, cx + 1, cy - 14, 6, 63)
   }
   ctx.restore()
 }

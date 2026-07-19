@@ -17,15 +17,36 @@ import {
   TOTAL_TREVOS,
   AMIZADE_MAX,
   AMIZADE_CORES,
+  BOSS_HP,
+  BOSS_SPEED,
+  BOSS_CONTACT,
+  BOSS_STUN,
+  BOSS_HIT_CD,
+  BOSS_HIT_RADIUS,
+  MINION_INTERVAL,
+  MINION_MAX,
 } from './constants'
-import { buildWorld, canStand, insideRocky } from './world'
-import { dialogueFor } from './dialogue'
-import type { Facing, QuestStage, Npc, Blob, Trevo, Particle, Toast, DialogueLine, NpcId, WorldData } from './types'
+import { buildWorld, canStand, insideRocky, insideCave, openGate } from './world'
+import { dialogueFor, cutsceneFor } from './dialogue'
+import type {
+  Facing,
+  QuestStage,
+  Chapter2,
+  Npc,
+  Blob,
+  Boss,
+  Trevo,
+  Particle,
+  Toast,
+  DialogueLine,
+  NpcId,
+  WorldData,
+} from './types'
 import { moveVector, type InputState } from './input'
 
 export interface DialogueBox {
   open: boolean
-  npc: NpcId | null
+  npc: NpcId | 'borrao' | null
   lines: DialogueLine[]
   idx: number
   chars: number // caracteres já revelados (máquina de escrever)
@@ -52,6 +73,8 @@ export class Game {
   dialogue: DialogueBox = { open: false, npc: null, lines: [], idx: 0, chars: 0 }
 
   questStage: QuestStage = 'pre'
+  chapter2: Chapter2 = 'locked'
+  boss: Boss
   trevoCount = 0
   blobTrevoDrops = 0 // trevos que já caíram de borrão (2 no total)
   amizade = 0 // nível de amizade com a canela (0..5) — muda a cor da bandana dela
@@ -80,6 +103,18 @@ export class Game {
       seed: 100 + i * 7,
     }))
     this.trevos = this.world.trevos.map((t, i) => ({ x: t.x, y: t.y, taken: false, seed: 200 + i * 3 }))
+    this.boss = {
+      x: this.world.bossHome.x,
+      y: this.world.bossHome.y,
+      homeX: this.world.bossHome.x,
+      homeY: this.world.bossHome.y,
+      hp: BOSS_HP,
+      state: 'idle',
+      stunT: 0,
+      hitCd: 0,
+      spawnT: MINION_INTERVAL,
+      seed: 500,
+    }
     this.camX = this.player.x
     this.camY = this.player.y
   }
@@ -126,10 +161,28 @@ export class Game {
     }
 
     this.updatePlayer(dt, input)
+    // se um golpe abriu uma cutscene (derrota do chefão), o mundo congela JÁ neste frame
+    if (this.dialogue.open) {
+      input.actionPressed = false
+      input.attackPressed = false
+      input.uiModal = true
+      return
+    }
     this.updateBlobs(dt)
+    this.updateBoss(dt)
     this.updatePickups()
     this.updateNearNpc(input)
     this.updateCamera(dt)
+
+    // cutscene: entrar na toca do borrão-mor desperta ele (nunca durante desmaio/diálogo)
+    if (
+      this.chapter2 === 'open' &&
+      this.faintT <= 0 &&
+      !this.dialogue.open &&
+      Math.hypot(this.player.x - this.boss.x, this.player.y - this.boss.y) < TILE * 5.5
+    ) {
+      this.dialogue = { open: true, npc: 'borrao', lines: cutsceneFor('despertar'), idx: 0, chars: 0 }
+    }
 
     input.actionPressed = false
     input.attackPressed = false
@@ -168,7 +221,15 @@ export class Game {
         this.questStage = 'done'
         this.celebrate()
         this.gainAmizade(2) // salvou o vale!
+      } else if (this.questStage === 'done' && this.chapter2 === 'locked') {
+        // a canela contou dos tremores: a passagem da caverna se abre
+        this.chapter2 = 'open'
+        openGate(this.world)
+        this.toast(this.player.x, this.player.y - 56, 'uma passagem se abriu nas pedras do sul!')
       }
+    } else if (npc === 'borrao') {
+      if (this.boss.state === 'defeated') this.finishChapter2()
+      else this.chapter2 = 'boss' // fim do papo: começa a briga
     }
   }
 
@@ -176,9 +237,41 @@ export class Game {
     this.dialogue = {
       open: true,
       npc,
-      lines: dialogueFor(npc, this.questStage, this.trevoCount, this.amizade),
+      lines: dialogueFor(npc, this.questStage, this.trevoCount, this.amizade, this.chapter2),
       idx: 0,
       chars: 0,
+    }
+  }
+
+  /** o borrão-mor aceita a amizade e vira a gota, moradora nova da vila */
+  private finishChapter2() {
+    this.chapter2 = 'done'
+    this.boss.state = 'friend'
+    // os lacaios que sobraram viram respingos
+    for (const b of this.blobs) {
+      if (b.minion && b.state !== 'dead') this.poof(b.x, b.y - 12)
+    }
+    this.blobs = this.blobs.filter((b) => !b.minion)
+    this.poof(this.boss.x, this.boss.y - 30)
+    this.toast(this.boss.x, this.boss.y - 80, 'o borrão-mor virou... gota!')
+    this.npcs.push({ id: 'gota', x: 9.5 * TILE, y: 13.5 * TILE, seed: 33 })
+    this.celebrate()
+  }
+
+  private poof(x: number, y: number) {
+    for (let i = 0; i < 12; i++) {
+      const a = Math.random() * Math.PI * 2
+      const sp = 30 + Math.random() * 80
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp - 40,
+        life: 0.5 + Math.random() * 0.4,
+        maxLife: 0.9,
+        size: 2.5 + Math.random() * 3,
+        color: '#57506b',
+      })
     }
   }
 
@@ -269,25 +362,97 @@ export class Game {
       if (b.state === 'dead') continue
       if (Math.hypot(b.x - ax, b.y - 14 - ay) < ATTACK_RADIUS) this.killBlob(b)
     }
+    // o chefão também apanha (só durante a briga)
+    if (this.chapter2 === 'boss' && this.boss.state !== 'defeated') {
+      if (Math.hypot(this.boss.x - ax, this.boss.y - 28 - ay) < BOSS_HIT_RADIUS) this.hitBoss()
+    }
+  }
+
+  private hitBoss() {
+    const b = this.boss
+    if (b.hitCd > 0) return // acabou de apanhar: tem um respiro pra reagir (sem stun-lock)
+    b.hitCd = BOSS_HIT_CD
+    b.hp--
+    b.state = 'stun'
+    b.stunT = BOSS_STUN
+    this.poof(b.x + (Math.random() - 0.5) * 30, b.y - 30)
+    if (b.hp <= 0) {
+      b.state = 'defeated'
+      // a briga acaba na hora: cutscene do acolhimento
+      this.dialogue = { open: true, npc: 'borrao', lines: cutsceneFor('derrota'), idx: 0, chars: 0 }
+    }
+  }
+
+  private updateBoss(dt: number) {
+    const b = this.boss
+    if (this.chapter2 !== 'boss' || b.state === 'defeated' || b.state === 'friend') return
+    if (b.hitCd > 0) b.hitCd -= dt
+    const p = this.player
+    if (b.state === 'stun') {
+      b.stunT -= dt
+      if (b.stunT <= 0) b.state = 'chase'
+      return
+    }
+    b.state = 'chase'
+    // persegue o nino dentro da caverna; se ele fugir, volta pro canto dele
+    const playerNaCaverna = insideCave(Math.floor(p.x / TILE), Math.floor(p.y / TILE))
+    const tx = playerNaCaverna ? p.x : b.homeX
+    const ty = playerNaCaverna ? p.y : b.homeY
+    const d = Math.hypot(tx - b.x, ty - b.y)
+    if (d > 4) {
+      const nx = b.x + ((tx - b.x) / d) * BOSS_SPEED * dt
+      const ny = b.y + ((ty - b.y) / d) * BOSS_SPEED * dt
+      if (canStand(this.world, nx, b.y)) b.x = nx
+      if (canStand(this.world, b.x, ny)) b.y = ny
+    }
+    // cospe lacaios de tempos em tempos
+    b.spawnT -= dt
+    const lacaiosVivos = this.blobs.filter((bb) => bb.minion && bb.state !== 'dead').length
+    if (b.spawnT <= 0 && lacaiosVivos < MINION_MAX && playerNaCaverna) {
+      b.spawnT = MINION_INTERVAL
+      const side = Math.random() < 0.5 ? -1 : 1
+      // nasce num ponto livre (nunca dentro de pedra, senão o lacaio travaria)
+      let sx = b.x + side * 50
+      let sy = b.y + 20
+      if (!canStand(this.world, sx, sy)) sx = b.x - side * 50
+      if (!canStand(this.world, sx, sy)) {
+        sx = b.x
+        sy = b.y
+      }
+      this.blobs.push({
+        x: sx,
+        y: sy,
+        homeX: b.x,
+        homeY: b.y,
+        targetX: b.x,
+        targetY: b.y,
+        retargetT: 0,
+        state: 'wander',
+        respawnT: 0,
+        seed: 600 + Math.floor(this.t * 10),
+        minion: true,
+      })
+      this.toast(b.x, b.y - 118, 'o borrão-mor cuspiu um lacaio!')
+    }
+    // encostão do grandão
+    const distP = Math.hypot(p.x - b.x, p.y - b.y)
+    if (distP < BOSS_CONTACT && p.iframes <= 0) {
+      p.hearts--
+      p.iframes = IFRAMES
+      const kb = 34
+      const d2 = Math.max(1, distP)
+      const kx = p.x + ((p.x - b.x) / d2) * kb
+      const ky = p.y + ((p.y - b.y) / d2) * kb
+      if (canStand(this.world, kx, p.y)) p.x = kx
+      if (canStand(this.world, p.x, ky)) p.y = ky
+      if (p.hearts <= 0) this.faintT = 2.2
+    }
   }
 
   private killBlob(b: Blob) {
     b.state = 'dead'
     b.respawnT = BLOB_RESPAWN
-    for (let i = 0; i < 12; i++) {
-      const a = Math.random() * Math.PI * 2
-      const sp = 30 + Math.random() * 80
-      this.particles.push({
-        x: b.x,
-        y: b.y - 12,
-        vx: Math.cos(a) * sp,
-        vy: Math.sin(a) * sp - 40,
-        life: 0.5 + Math.random() * 0.4,
-        maxLife: 0.9,
-        size: 2.5 + Math.random() * 3,
-        color: '#57506b',
-      })
-    }
+    this.poof(b.x, b.y - 12)
     // limpar o vale aproxima vocês: a cada 2 borrões, a amizade cresce
     // (só depois de conhecer a canela — antes da missão não existe laço ainda)
     if (this.questStage !== 'pre') {
@@ -310,6 +475,7 @@ export class Game {
     const p = this.player
     for (const b of this.blobs) {
       if (b.state === 'dead') {
+        if (b.minion) continue // lacaio derrotado não volta
         b.respawnT -= dt
         // só renasce com o jogador longe do ponto (senão apareceria em cima dele)
         if (b.respawnT <= 0 && Math.hypot(p.x - b.homeX, p.y - b.homeY) > BLOB_SIGHT) {
@@ -321,8 +487,10 @@ export class Game {
       }
 
       const distP = Math.hypot(p.x - b.x, p.y - b.y)
-      const playerInRocky = insideRocky(Math.floor(p.x / TILE), Math.floor(p.y / TILE))
-      b.state = distP < BLOB_SIGHT && playerInRocky ? 'chase' : 'wander'
+      const ptx = Math.floor(p.x / TILE)
+      const pty = Math.floor(p.y / TILE)
+      const persegue = b.minion ? insideCave(ptx, pty) : distP < BLOB_SIGHT && insideRocky(ptx, pty)
+      b.state = persegue ? 'chase' : 'wander'
 
       let tx = b.targetX
       let ty = b.targetY

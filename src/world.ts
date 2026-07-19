@@ -6,13 +6,19 @@ import { rng } from './sketch'
 import type { WorldData, Floor, Decor } from './types'
 
 export const MAP_W = 46
-export const MAP_H = 28
+export const MAP_H = 38 // linhas 28+ são o subsolo (caverna do capítulo 2)
 
 // região das pedras (bioma dos borrões)
 export const ROCKY = { x0: 27, y0: 16, x1: 44, y1: 27 }
+// caverna subterrânea do borrão-mor
+export const CAVE = { x0: 1, y0: 29, x1: 44, y1: 36 }
 
 export function insideRocky(tx: number, ty: number): boolean {
   return tx >= ROCKY.x0 && tx <= ROCKY.x1 && ty >= ROCKY.y0 && ty <= ROCKY.y1
+}
+
+export function insideCave(tx: number, ty: number): boolean {
+  return tx >= CAVE.x0 && tx <= CAVE.x1 && ty >= CAVE.y0 && ty <= CAVE.y1
 }
 
 export function buildWorld(): WorldData {
@@ -43,6 +49,8 @@ export function buildWorld(): WorldData {
   // ---- chão dos biomas ----
   for (let y = ROCKY.y0; y <= ROCKY.y1; y++)
     for (let x = ROCKY.x0; x <= ROCKY.x1; x++) setFloor(x, y, 'dark')
+  // caverna do capítulo 2 (subsolo)
+  for (let y = 28; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) setFloor(x, y, 'cave')
 
   // lago (noroeste)
   for (let y = 1; y <= 6; y++)
@@ -54,15 +62,38 @@ export function buildWorld(): WorldData {
       }
     }
 
-  // ---- borda de árvores em volta do mapa ----
+  // ---- bordas: árvores na superfície, pedras no subsolo ----
+  const rock = (tx: number, ty: number) => {
+    addDecor('rock', tx, ty)
+    setSolid(tx, ty)
+  }
+  const borda = (tx: number, ty: number) => (ty >= 28 ? rock(tx, ty) : tree(tx, ty))
   for (let x = 0; x < MAP_W; x++) {
     tree(x, 0)
-    tree(x, MAP_H - 1)
+    rock(x, MAP_H - 1)
   }
   for (let y = 1; y < MAP_H - 1; y++) {
-    tree(0, y)
-    tree(MAP_W - 1, y)
-    tree(MAP_W - 2, y) // borda leste mais grossa
+    borda(0, y)
+    borda(MAP_W - 1, y)
+    borda(MAP_W - 2, y) // borda leste mais grossa
+  }
+
+  // ---- muralha que separa a superfície da caverna (y=28), com a passagem fechada ----
+  const gate: { x: number; y: number }[] = []
+  for (let x = 1; x < MAP_W - 2; x++) {
+    if (x === 33 || x === 34) {
+      rock(x, 28)
+      gate.push({ x, y: 28 }) // essas duas pedras somem quando o capítulo 2 abre
+    } else {
+      rock(x, 28)
+    }
+  }
+  // pedrinhas decorativas espalhadas pela caverna
+  // (fora do corredor de entrada x32-35 e da arena do chefe)
+  for (let i = 0; i < 10; i++) {
+    const x = 3 + Math.floor(r() * 40)
+    const y = 30 + Math.floor(r() * 6)
+    if (!solid[y]?.[x] && !(x >= 32 && x <= 35) && !(x > 26 && y > 31)) rock(x, y)
   }
 
   // ---- floresta (norte e leste) ----
@@ -107,7 +138,7 @@ export function buildWorld(): WorldData {
     }
   }
   for (let x = 4; x <= 33; x++) carve(x, 11) // vila -> leste
-  for (let y = 11; y <= 21; y++) carve(33, y) // desce pras pedras
+  for (let y = 11; y <= 27; y++) carve(33, y) // desce pras pedras, até a muralha da caverna
   for (let y = 4; y <= 11; y++) carve(13, y) // sobe pro lago/lesma
   for (let x = 8; x <= 13; x++) carve(x, 4) // até a beira do lago
 
@@ -170,6 +201,20 @@ export function buildWorld(): WorldData {
     ],
     blobs,
     trevos,
+    gate,
+    bossHome: { x: 34.5 * TILE, y: 34.5 * TILE },
+  }
+}
+
+/** abre a passagem da caverna: some com as pedras do portão (capítulo 2) */
+export function openGate(world: WorldData) {
+  for (const gtile of world.gate) {
+    world.solid[gtile.y][gtile.x] = false
+    const cx = (gtile.x + 0.5) * TILE
+    const cy = (gtile.y + 1) * TILE
+    for (let i = world.decors.length - 1; i >= 0; i--) {
+      if (Math.abs(world.decors[i].x - cx) < 1 && Math.abs(world.decors[i].y - cy) < 1) world.decors.splice(i, 1)
+    }
   }
 }
 

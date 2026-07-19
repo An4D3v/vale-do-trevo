@@ -2,7 +2,7 @@
 
 import { TILE, VIEW_W, VIEW_H, PAL, MAX_HEARTS, TOTAL_TREVOS, ATTACK_TIME, AMIZADE_MAX, AMIZADE_CORES } from './constants'
 import { rng, setSketchPhase, sketchEllipse, sketchPoly, sketchRect, sketchLine, sketchHeart } from './sketch'
-import { drawNino, drawCanela, drawLesma, drawBlob, drawClover, drawPortrait } from './characters'
+import { drawNino, drawCanela, drawLesma, drawBlob, drawBorraoMor, drawGota, drawClover, drawPortrait } from './characters'
 import { NPC_NAMES } from './dialogue'
 import { DPAD, BTN_A, BTN_B, type InputState } from './input'
 import type { Game } from './game'
@@ -95,6 +95,26 @@ function drawFloor(ctx: CanvasRenderingContext2D, g: Game, camX: number, camY: n
           ctx.arc(px + 6 + r() * 20, py + 6 + r() * 20, 1.6, 0, Math.PI * 2)
           ctx.fill()
         }
+      } else if (f === 'cave') {
+        // subsolo: mais escuro e com riscadinhos de sombra
+        ctx.fillStyle = '#c3b7a4'
+        ctx.fillRect(px, py, TILE, TILE)
+        if (r() < 0.5) {
+          ctx.fillStyle = 'rgba(74,68,60,0.2)'
+          ctx.beginPath()
+          ctx.arc(px + 6 + r() * 20, py + 6 + r() * 20, 1.8, 0, Math.PI * 2)
+          ctx.fill()
+        }
+        if (r() < 0.18) {
+          ctx.strokeStyle = 'rgba(74,68,60,0.25)'
+          ctx.lineWidth = 1.4
+          const lx = px + 4 + r() * 20
+          const ly = py + 6 + r() * 18
+          ctx.beginPath()
+          ctx.moveTo(lx, ly)
+          ctx.lineTo(lx + 6, ly + 3)
+          ctx.stroke()
+        }
       } else {
         // grama = o próprio papel, com tiquinhos verdes espalhados
         if (r() < 0.5) {
@@ -130,12 +150,34 @@ function drawEntities(ctx: CanvasRenderingContext2D, g: Game, camX: number, camY
     items.push({
       y: n.y,
       draw: () =>
-        n.id === 'canela' ? drawCanela(ctx, n.x, n.y, g.t, n.seed, g.amizade) : drawLesma(ctx, n.x, n.y, g.t, n.seed),
+        n.id === 'canela'
+          ? drawCanela(ctx, n.x, n.y, g.t, n.seed, g.amizade)
+          : n.id === 'gota'
+            ? drawGota(ctx, n.x, n.y, g.t, n.seed)
+            : drawLesma(ctx, n.x, n.y, g.t, n.seed),
     })
   }
   for (const b of g.blobs) {
     if (b.state === 'dead') continue
     items.push({ y: b.y, draw: () => drawBlob(ctx, b.x, b.y, g.t, b.seed, (g.player.x - b.x) / 40) })
+  }
+  // o borrão-mor (invisível até a canela contar dele; some depois que vira gota)
+  if (g.chapter2 !== 'locked' && g.boss.state !== 'friend' && Math.abs(g.boss.y - camY) < VIEW_H / 2 + margin) {
+    items.push({
+      y: g.boss.y,
+      draw: () =>
+        drawBorraoMor(
+          ctx,
+          g.boss.x,
+          g.boss.y,
+          g.t,
+          g.boss.seed,
+          g.boss.state,
+          g.boss.hp,
+          (g.player.x - g.boss.x) / 60,
+          g.chapter2 === 'boss' && g.boss.state !== 'defeated',
+        ),
+    })
   }
   const p = g.player
   const blink = p.iframes > 0 && Math.floor(g.t * 12) % 2 === 0
@@ -321,7 +363,12 @@ function drawHud(ctx: CanvasRenderingContext2D, g: Game) {
   let hint: string | null = null
   if (g.questStage === 'pre') hint = 'fale com a canela (aperte e)'
   else if (g.questStage === 'active' && g.trevoCount >= TOTAL_TREVOS) hint = 'leve os trevos de volta pra canela!'
-  else if (g.questStage === 'done') hint = '~ capítulo 1 completo ~'
+  else if (g.questStage === 'done') {
+    if (g.chapter2 === 'locked') hint = 'a canela tem novidades pra você...'
+    else if (g.chapter2 === 'open') hint = 'desça pela passagem no fundo das pedras do sul'
+    else if (g.chapter2 === 'boss') hint = 'acalme o borrão-mor!'
+    else hint = '~ capítulo 2 completo ~'
+  }
   if (hint) {
     ctx.font = `13px ${FONT}`
     const w = ctx.measureText(hint).width + 18

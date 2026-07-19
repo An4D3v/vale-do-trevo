@@ -74,3 +74,14 @@ export const TOTAL_TREVOS = 6
 // (nível 5 = roxa, a cor do desenho original)
 export const AMIZADE_MAX = 5
 export const AMIZADE_CORES = ['#e05263', '#e8702a', '#f4c95d', '#4caf50', '#39c0ed', '#8e44ad'] as const
+
+// capítulo 2: o borrão-mor
+export const BOSS_HP = 8
+export const BOSS_SPEED = 58
+export const BOSS_CONTACT = TILE * 1.05
+export const BOSS_STUN = 0.35
+export const BOSS_HIT_CD = 0.7 // entre um hit e outro o chefão tem tempo de reagir
+export const BOSS_HIT_RADIUS = TILE * 1.7 // ele é grandão: mais fácil de acertar
+export const MINION_INTERVAL = 4.5 // segundos entre lacaios
+export const MINION_MAX = 2 // lacaios vivos ao mesmo tempo
+export const GOTA_COLOR = '#9b8fc0' // a gota: o borrão-mor depois de acolhido
