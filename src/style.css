@@ -23,10 +23,101 @@ body {
 }
 
 .frame {
+  position: relative;
   width: 100%;
   /* nunca mais alto que a tela: no celular deitado o jogo inteiro (com controles) cabe */
   max-width: min(980px, calc((100vh - 52px) * 1.7778));
   max-width: min(980px, calc((100dvh - 52px) * 1.7778));
+}
+
+/* ---- modo celular: tela cheia + deitado ---- */
+
+.fs-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 30;
+  background: rgba(247, 242, 230, 0.85);
+  border: 2px solid #4a443c;
+  border-radius: 9px;
+  color: #4a443c;
+  font: inherit;
+  font-size: 17px;
+  line-height: 1;
+  padding: 6px 10px;
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.fs-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: none;
+  background: rgba(24, 21, 17, 0.85);
+  color: #f7f2e6;
+  font: inherit;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 24px;
+  text-align: center;
+}
+.fs-overlay .fs-icon {
+  font-size: 44px;
+}
+
+/* tela cheia de verdade: sem molduras, jogo centralizado */
+html:fullscreen body {
+  padding: 0;
+}
+html:fullscreen .hint {
+  display: none;
+}
+html:fullscreen .frame {
+  max-width: min(100vw, calc(100vh * 1.7778));
+  max-width: min(100vw, calc(100dvh * 1.7778));
+}
+html:fullscreen canvas {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* fallback do ios (sem trava de orientação): gira o jogo 90° com o celular em pé */
+.frame.force-land {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vh;
+  width: 100dvh;
+  height: 100vw;
+  height: 100dvw;
+  max-width: none;
+  margin: 0;
+  transform: rotate(90deg) translateY(-100%);
+  transform-origin: top left;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #efe7d6;
+  z-index: 50;
+}
+.frame.force-land canvas {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+.frame.force-land .hint {
+  display: none;
 }
 
 canvas {

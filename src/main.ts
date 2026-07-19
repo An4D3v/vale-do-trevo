@@ -4,6 +4,7 @@ import { VIEW_W, VIEW_H } from './constants'
 import { Game } from './game'
 import { render } from './render'
 import { createInput } from './input'
+import { setupMobileFullscreen } from './fullscreen'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 app.innerHTML = `
@@ -22,6 +23,7 @@ ctx.scale(dpr, dpr)
 
 const game = new Game()
 const input = createInput(canvas)
+setupMobileFullscreen(document.querySelector<HTMLDivElement>('.frame')!, canvas)
 
 // hooks de teste (só com ?debug na url): permitem simular e capturar frames
 // mesmo sem requestAnimationFrame (ex.: aba em segundo plano)

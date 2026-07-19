@@ -68,6 +68,10 @@ export function createInput(canvas: HTMLCanvasElement): InputState {
   // ---- toque ----
   const toCanvas = (e: PointerEvent): [number, number] => {
     const r = canvas.getBoundingClientRect()
+    if (canvas.dataset.rot === '1') {
+      // jogo girado 90° via css (modo deitado forçado no celular em pé): troca os eixos
+      return [((e.clientY - r.top) / r.height) * VIEW_W, ((r.right - e.clientX) / r.width) * VIEW_H]
+    }
     return [((e.clientX - r.left) / r.width) * VIEW_W, ((e.clientY - r.top) / r.height) * VIEW_H]
   }
   let dpadPointer: number | null = null
