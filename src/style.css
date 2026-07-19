@@ -1,0 +1,48 @@
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  touch-action: manipulation; /* bloqueia double-tap-zoom fora do canvas */
+  overscroll-behavior: none;
+}
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: #efe7d6;
+  font-family: 'Segoe Print', 'Comic Sans MS', 'Chalkboard SE', cursive;
+  color: #4a443c;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.frame {
+  width: 100%;
+  /* nunca mais alto que a tela: no celular deitado o jogo inteiro (com controles) cabe */
+  max-width: min(980px, calc((100vh - 52px) * 1.7778));
+  max-width: min(980px, calc((100dvh - 52px) * 1.7778));
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #f7f2e6;
+  border: 2px solid #4a443c;
+  border-radius: 10px;
+  box-shadow: 4px 5px 0 rgba(74, 68, 60, 0.25);
+  touch-action: none;
+}
+
+.hint {
+  text-align: center;
+  font-size: 12px;
+  opacity: 0.65;
+  margin: 10px 0 0;
+}
