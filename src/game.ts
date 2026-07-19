@@ -35,7 +35,7 @@ export class Game {
     walking: false,
     hearts: MAX_HEARTS,
     iframes: 0,
-    attackT: 0, // >0 = espada em movimento
+    attackT: 0, // >0 = bastão em movimento
     attackCd: 0,
   }
   npcs: Npc[] = []

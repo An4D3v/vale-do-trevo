@@ -25,7 +25,7 @@ Jogo 2D top-down com estética de **desenho feito à mão** — contornos tremid
 
 ## História
 
-Um borrão de tinta gigante passou pelo vale espirrando manchas por tudo que é lado — e os **6 trevos da sorte** se espalharam. Sem eles, as cores do vale vão desbotando. **Nino**, o ninja de trevo na cabeça, precisa recuperá-los: alguns estão perdidos pela floresta, outros ficaram com os **borrõezinhos** que rondam as pedras do sul. A raposa **Canela** orienta a missão; a **Dona Lesma** comenta tudo do jeito dela (bem devagar).
+Um borrão de tinta gigante passou pelo vale espirrando manchas por tudo que é lado — e os **6 trevos da sorte** se espalharam. Sem eles, as cores do vale vão desbotando. **Nino**, o ninja do bastão de lacinho, precisa recuperá-los: alguns estão perdidos pela floresta, outros ficaram com os **borrõezinhos** que rondam as pedras do sul. A raposa **Canela** orienta a missão; a **Dona Lesma** comenta tudo do jeito dela (bem devagar).
 
 ## Como jogar
 
@@ -33,7 +33,7 @@ Um borrão de tinta gigante passou pelo vale espirrando manchas por tudo que é 
 | --- | --- | --- |
 | andar | setas / WASD | direcional virtual |
 | falar / avançar conversa | E, espaço ou clique | botão **falar** (ou toque na tela) |
-| espada | X ou J | botão **espada** |
+| bastão | X ou J | botão **bastão** |
 
 Trevos são coletados passando por cima. Encostar num borrão custa um coração; zerando os corações, o Nino desmaia e acorda na vila — sem perder progresso.
 
@@ -78,7 +78,7 @@ Abra `http://localhost:5173` (ou a porta que o Vite indicar). Com `?debug=1` na 
 
 ## Roadmap
 
-- [ ] Sons (passos, espada, coleta, falas)
+- [ ] Sons (passos, bastão, coleta, falas)
 - [ ] Save de progresso no navegador
 - [ ] "Evolução" da Canela (mecânica de amizade inspirada nas setas arco-íris do desenho original)
 - [ ] Capítulo 2: de onde veio o borrão gigante?

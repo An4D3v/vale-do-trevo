@@ -394,7 +394,7 @@ function drawTouchControls(ctx: CanvasRenderingContext2D, input: InputState) {
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillText('falar', BTN_A.x, BTN_A.y)
-  ctx.fillText('espada', BTN_B.x, BTN_B.y)
+  ctx.fillText('bastão', BTN_B.x, BTN_B.y)
   ctx.restore()
 }
 

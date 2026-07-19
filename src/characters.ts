@@ -19,9 +19,42 @@ export function drawClover(ctx: CanvasRenderingContext2D, cx: number, cy: number
   }
 }
 
+/** silhueta do corpo do nino: gorducho com curvinhas harmoniosas (não é um oval perfeito) */
+function ninoBodyPts(cx: number, cy: number): [number, number][] {
+  const pts: [number, number][] = []
+  const n = 22
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2
+    const belly = 1 + 0.16 * Math.max(0, Math.sin(a)) // mais larguinho embaixo
+    const curvinhas = 1 + 0.05 * Math.sin(3 * a + 0.9) // ondulações suaves do traço
+    pts.push([cx + Math.cos(a) * 16 * belly * curvinhas, cy + Math.sin(a) * 19 * curvinhas])
+  }
+  return pts
+}
+
+/** bastão de madeira atravessado nas costas: ponta com lacinho verde em cima à esquerda, cabo espiando na cintura */
+function drawBastao(ctx: CanvasRenderingContext2D, seed: number) {
+  sketchLine(ctx, 19, -9, -17, -52, seed, PAL.wood, 4, 0.8)
+  sketchLine(ctx, 19, -9, -17, -52, seed + 1, PAL.pencil, 1.1, 0.9)
+  // listrinhas do cabo (a parte que aparece na cintura)
+  sketchLine(ctx, 13.4, -14.6, 17.2, -11.6, seed + 2, PAL.pencil, 1.2, 0.4)
+  sketchLine(ctx, 11.2, -17.3, 15, -14.3, seed + 3, PAL.pencil, 1.2, 0.4)
+  // lacinho verde na pontinha
+  ctx.save()
+  ctx.translate(-17, -52)
+  ctx.rotate(-0.35)
+  sketchEllipse(ctx, -4.2, -1.2, 3.4, 2.3, seed + 4, PAL.ninoHoodRim, PAL.pencil, 1.3)
+  sketchEllipse(ctx, 3, -2.2, 3.4, 2.3, seed + 5, PAL.ninoHoodRim, PAL.pencil, 1.3)
+  ctx.fillStyle = PAL.pencil
+  ctx.beginPath()
+  ctx.arc(-0.5, -1.5, 1.3, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.restore()
+}
+
 /**
  * nino, o player. `t` anima (bob/passos), `walking` liga as perninhas,
- * `facing` espelha o lado da espada.
+ * `facing` espelha o lado do bastão.
  */
 export function drawNino(
   ctx: CanvasRenderingContext2D,
@@ -49,41 +82,59 @@ export function drawNino(
   sketchEllipse(ctx, -7, -3 + step, 5, 4, seed + 5, PAL.ninoBodyDark, PAL.pencil, 1.6)
   sketchEllipse(ctx, 7, -3 - step, 5, 4, seed + 6, PAL.ninoBodyDark, PAL.pencil, 1.6)
 
-  // cabo da espada de madeira (na cintura)
-  ctx.save()
-  ctx.translate(14, -20)
-  ctx.rotate(0.6)
-  sketchRect(ctx, -2.5, -9, 5, 14, seed + 7, PAL.wood, PAL.pencil, 1.6)
-  sketchLine(ctx, -4, -9, 4, -9, seed + 8, PAL.pencil, 2, 0.6)
-  ctx.restore()
+  // bastão nas costas (o corpo cobre o meio; sobram a ponta com lacinho e o cabo)
+  drawBastao(ctx, seed + 7)
 
-  // corpo gorducho
-  sketchEllipse(ctx, 0, -22, 17, 20, seed, PAL.ninoBody, PAL.pencil, 2.2)
-  // botão verde
-  sketchEllipse(ctx, 0, -16, 3.6, 3.6, seed + 1, PAL.ninoButton, PAL.pencil, 1.5)
-  sketchLine(ctx, -1.4, -16, 1.4, -16, seed + 12, PAL.pencil, 1, 0.4)
+  // corpo gorducho de curvinhas
+  sketchPoly(ctx, ninoBodyPts(0, -22), seed, PAL.ninoBody, PAL.pencil, 2.2)
+  // costurinhas do traje
+  ctx.strokeStyle = 'rgba(247, 242, 230, 0.65)'
+  ctx.lineWidth = 1.2
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  for (const [sx, sy] of [
+    [-15.5, -12],
+    [-16.5, -20],
+    [-14.5, -28],
+    [15.5, -12],
+    [16.5, -20],
+    [14.5, -28],
+  ]) {
+    ctx.moveTo(sx, sy)
+    ctx.lineTo(sx * 0.82, sy + 2.4)
+  }
+  ctx.stroke()
+  // botão verde com furinhos
+  sketchEllipse(ctx, 0, -13, 4, 4, seed + 1, PAL.ninoButton, PAL.pencil, 1.5)
+  ctx.fillStyle = '#2e7d32'
+  ctx.beginPath()
+  for (const [bx, by] of [
+    [-1.3, -14.3],
+    [1.3, -14.3],
+    [-1.3, -11.7],
+    [1.3, -11.7],
+  ]) {
+    ctx.moveTo(bx + 0.8, by)
+    ctx.arc(bx, by, 0.8, 0, Math.PI * 2)
+  }
+  ctx.fill()
 
   // abertura do capuz com aro verde + rosto rosa
   sketchEllipse(ctx, 0, -30, 10.5, 9.5, seed + 2, PAL.ninoHoodRim, PAL.pencil, 2)
   sketchEllipse(ctx, 0, -30, 8, 7.2, seed + 3, PAL.ninoFace, PAL.pencil, 1.6)
 
-  // olhinhos + bochechas (sempre virados pro lado do movimento)
+  // olhões escuros (sempre virados pro lado do movimento)
+  const look = facing === 'up' ? 0 : 1.2
   ctx.fillStyle = PAL.pencil
-  const look = facing === 'up' ? 0 : 1.5
   ctx.beginPath()
-  ctx.arc(-2.6 + look, -31, 1.3, 0, Math.PI * 2)
-  ctx.arc(2.6 + look, -31, 1.3, 0, Math.PI * 2)
+  ctx.ellipse(-3 + look, -30.2, 2.4, 3.2, 0, 0, Math.PI * 2)
+  ctx.ellipse(3 + look, -30.2, 2.4, 3.2, 0, 0, Math.PI * 2)
   ctx.fill()
-  ctx.fillStyle = PAL.ninoBlush
-  ctx.globalAlpha = 0.7
+  ctx.fillStyle = '#ffffff'
   ctx.beginPath()
-  ctx.arc(-4.5 + look, -28, 1.6, 0, Math.PI * 2)
-  ctx.arc(4.5 + look, -28, 1.6, 0, Math.PI * 2)
+  ctx.arc(-3.8 + look, -31.4, 0.7, 0, Math.PI * 2)
+  ctx.arc(2.2 + look, -31.4, 0.7, 0, Math.PI * 2)
   ctx.fill()
-  ctx.globalAlpha = 1
-
-  // trevo na cabeça
-  drawClover(ctx, 1, -45, 6, seed + 4)
 
   ctx.restore()
 }
@@ -226,15 +277,23 @@ export function drawPortrait(ctx: CanvasRenderingContext2D, who: 'nino' | 'canel
   ctx.arc(cx, cy, 24, 0, Math.PI * 2)
   ctx.clip()
   if (who === 'nino') {
+    // pontinha do bastão com lacinho aparecendo atrás do capuz (dentro da moldura)
+    sketchLine(ctx, cx + 15, cy + 21, cx - 10, cy - 13, 44, PAL.wood, 4, 0.8)
+    sketchEllipse(ctx, cx - 13.5, cy - 14, 3.2, 2.3, 45, PAL.ninoHoodRim, PAL.pencil, 1.3)
+    sketchEllipse(ctx, cx - 7.5, cy - 16, 3.2, 2.3, 46, PAL.ninoHoodRim, PAL.pencil, 1.3)
     sketchEllipse(ctx, cx, cy + 22, 24, 20, 41, PAL.ninoBody, PAL.pencil, 2)
     sketchEllipse(ctx, cx, cy - 2, 16, 15, 42, PAL.ninoHoodRim, PAL.pencil, 2)
     sketchEllipse(ctx, cx, cy - 2, 12.5, 11.5, 43, PAL.ninoFace, PAL.pencil, 1.6)
     ctx.fillStyle = PAL.pencil
     ctx.beginPath()
-    ctx.arc(cx - 4, cy - 4, 1.8, 0, Math.PI * 2)
-    ctx.arc(cx + 4, cy - 4, 1.8, 0, Math.PI * 2)
+    ctx.ellipse(cx - 4.5, cy - 3, 3.4, 4.6, 0, 0, Math.PI * 2)
+    ctx.ellipse(cx + 4.5, cy - 3, 3.4, 4.6, 0, 0, Math.PI * 2)
     ctx.fill()
-    drawClover(ctx, cx + 1, cy - 20, 7, 44)
+    ctx.fillStyle = '#ffffff'
+    ctx.beginPath()
+    ctx.arc(cx - 5.6, cy - 4.6, 1, 0, Math.PI * 2)
+    ctx.arc(cx + 3.4, cy - 4.6, 1, 0, Math.PI * 2)
+    ctx.fill()
   } else if (who === 'canela') {
     sketchPoly(ctx, [[cx - 14, cy - 22], [cx - 5, cy - 8], [cx - 20, cy - 8]], 45, PAL.foxOrange, PAL.pencil, 2)
     sketchPoly(ctx, [[cx + 14, cy - 22], [cx + 20, cy - 8], [cx + 5, cy - 8]], 46, PAL.foxOrange, PAL.pencil, 2)

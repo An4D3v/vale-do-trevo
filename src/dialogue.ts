@@ -17,7 +17,7 @@ export function dialogueFor(npc: NpcId, stage: QuestStage, trevos: number): Dial
         { who: 'canela', text: 'um borrão de tinta gigante passou pelo vale espirrando manchas por tudo que é lado...' },
         { who: 'nino', text: '...então era por isso que o céu tava cinza no meu sonho.' },
         { who: 'canela', text: `e o pior: os ${TOTAL_TREVOS} trevos da sorte se espalharam! sem eles, as cores do vale vão desbotando.` },
-        { who: 'canela', text: 'os borrõezinhos guardam alguns. um golpe da sua espada de madeira resolve — sem dó, eles são só tinta!' },
+        { who: 'canela', text: 'os borrõezinhos guardam alguns. um golpe do seu bastão resolve — sem dó, eles são só tinta!' },
         { who: 'canela', text: 'procura na floresta e nas pedras do sul. eu fico de olho na vila. boa sorte! ✿' },
       ]
     }

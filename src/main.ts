@@ -10,7 +10,7 @@ const app = document.querySelector<HTMLDivElement>('#app')!
 app.innerHTML = `
   <div class="frame">
     <canvas id="game"></canvas>
-    <p class="hint">setas/wasd = andar · e ou espaço = falar · x = espada · no celular: controles na tela</p>
+    <p class="hint">setas/wasd = andar · e ou espaço = falar · x = bastão · no celular: controles na tela</p>
   </div>
 `
 

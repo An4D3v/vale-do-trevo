@@ -1,4 +1,4 @@
-// entrada do jogo: teclado (setas/wasd + e/espaço falar + x espada)
+// entrada do jogo: teclado (setas/wasd + e/espaço falar + x bastão)
 // e toque (direcional virtual à esquerda, botões à direita).
 
 import { VIEW_W, VIEW_H } from './constants'
@@ -7,7 +7,7 @@ export interface InputState {
   moveX: number
   moveY: number
   actionPressed: boolean // falar / avançar conversa (consumido a cada frame)
-  attackPressed: boolean // espada (consumido a cada frame)
+  attackPressed: boolean // bastão (consumido a cada frame)
   touchVisible: boolean
   dpadActive: boolean
   dpadDX: number
@@ -18,7 +18,7 @@ export interface InputState {
 // posições dos controles de toque (coordenadas lógicas do canvas)
 export const DPAD = { x: 92, y: VIEW_H - 92, r: 62 }
 export const BTN_A = { x: VIEW_W - 66, y: VIEW_H - 64, r: 30 } // falar
-export const BTN_B = { x: VIEW_W - 138, y: VIEW_H - 100, r: 26 } // espada
+export const BTN_B = { x: VIEW_W - 138, y: VIEW_H - 100, r: 26 } // bastão
 // raio de ACERTO dos botões (maior que o desenho: dedo no celular precisa de área generosa)
 const BTN_HIT = 56
 
