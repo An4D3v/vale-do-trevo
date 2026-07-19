@@ -236,7 +236,7 @@ function drawAttack(ctx: CanvasRenderingContext2D, g: Game) {
   ctx.strokeStyle = PAL.pencilSoft
   ctx.lineWidth = 1.6
   ctx.beginPath()
-  ctx.arc(p.x, p.y - 14, TILE * 0.82, baseAngle + dir * (-0.8 + prog * 1.1), baseAngle + dir * (-0.25 + prog * 1.1), dir < 0)
+  ctx.arc(p.x, p.y - 14, TILE * 0.95, baseAngle + dir * (-0.8 + prog * 1.1), baseAngle + dir * (-0.25 + prog * 1.1), dir < 0)
   ctx.stroke()
   // estrelinha no ponto do impacto
   if (prog < 0.4) {

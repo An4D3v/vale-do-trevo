@@ -54,8 +54,11 @@ export const PAL = {
 
 // jogador
 export const WALK_SPEED = 105 // px/s
-export const ATTACK_TIME = 0.28
-export const ATTACK_COOLDOWN = 0.4
+export const ATTACK_TIME = 0.2 // golpe rápido
+export const ATTACK_COOLDOWN = 0.2 // emenda um golpe no outro (spam de clique = combo)
+export const ATTACK_BUFFER = 0.25 // clique durante um golpe fica guardado pro próximo
+export const ATTACK_REACH = TILE * 1.1 // distância do centro do golpe
+export const ATTACK_RADIUS = TILE * 1.3 // raio de acerto em volta do centro
 export const IFRAMES = 1.2
 export const MAX_HEARTS = 3
 

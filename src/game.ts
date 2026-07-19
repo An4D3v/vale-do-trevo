@@ -5,6 +5,9 @@ import {
   WALK_SPEED,
   ATTACK_TIME,
   ATTACK_COOLDOWN,
+  ATTACK_BUFFER,
+  ATTACK_REACH,
+  ATTACK_RADIUS,
   IFRAMES,
   MAX_HEARTS,
   BLOB_WANDER_SPEED,
@@ -39,6 +42,7 @@ export class Game {
     iframes: 0,
     attackT: 0, // >0 = bastão em movimento
     attackCd: 0,
+    attackBuffer: 0, // clique guardado durante o cooldown (combo)
   }
   npcs: Npc[] = []
   blobs: Blob[] = []
@@ -238,7 +242,11 @@ export class Game {
       if (canStand(this.world, p.x, ny)) p.y = ny
     }
 
-    if (input.attackPressed && p.attackCd <= 0) {
+    // buffer de combo: clique no meio de um golpe fica guardado e dispara na hora certa
+    if (input.attackPressed) p.attackBuffer = ATTACK_BUFFER
+    else if (p.attackBuffer > 0) p.attackBuffer -= dt
+    if (p.attackBuffer > 0 && p.attackCd <= 0) {
+      p.attackBuffer = 0
       p.attackT = ATTACK_TIME
       p.attackCd = ATTACK_COOLDOWN
       this.swingHits()
@@ -248,7 +256,7 @@ export class Game {
   /** ponto central do golpe, na direção que o nino olha */
   attackPoint(): [number, number] {
     const p = this.player
-    const d = TILE * 0.9
+    const d = ATTACK_REACH
     if (p.facing === 'up') return [p.x, p.y - d]
     if (p.facing === 'down') return [p.x, p.y + d * 0.7]
     if (p.facing === 'left') return [p.x - d, p.y - 6]
@@ -259,7 +267,7 @@ export class Game {
     const [ax, ay] = this.attackPoint()
     for (const b of this.blobs) {
       if (b.state === 'dead') continue
-      if (Math.hypot(b.x - ax, b.y - 14 - ay) < TILE * 0.95) this.killBlob(b)
+      if (Math.hypot(b.x - ax, b.y - 14 - ay) < ATTACK_RADIUS) this.killBlob(b)
     }
   }
 
