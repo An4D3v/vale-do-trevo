@@ -1,6 +1,6 @@
 // desenho de cada frame: mundo-papel, entidades (ordenadas por y), HUD e diálogo.
 
-import { TILE, VIEW_W, VIEW_H, PAL, MAX_HEARTS, TOTAL_TREVOS, ATTACK_TIME } from './constants'
+import { TILE, VIEW_W, VIEW_H, PAL, MAX_HEARTS, TOTAL_TREVOS, ATTACK_TIME, AMIZADE_MAX, AMIZADE_CORES } from './constants'
 import { rng, setSketchPhase, sketchEllipse, sketchPoly, sketchRect, sketchLine, sketchHeart } from './sketch'
 import { drawNino, drawCanela, drawLesma, drawBlob, drawClover, drawPortrait } from './characters'
 import { NPC_NAMES } from './dialogue'
@@ -130,7 +130,7 @@ function drawEntities(ctx: CanvasRenderingContext2D, g: Game, camX: number, camY
     items.push({
       y: n.y,
       draw: () =>
-        n.id === 'canela' ? drawCanela(ctx, n.x, n.y, g.t, n.seed) : drawLesma(ctx, n.x, n.y, g.t, n.seed),
+        n.id === 'canela' ? drawCanela(ctx, n.x, n.y, g.t, n.seed, g.amizade) : drawLesma(ctx, n.x, n.y, g.t, n.seed),
     })
   }
   for (const b of g.blobs) {
@@ -139,7 +139,9 @@ function drawEntities(ctx: CanvasRenderingContext2D, g: Game, camX: number, camY
   }
   const p = g.player
   const blink = p.iframes > 0 && Math.floor(g.t * 12) % 2 === 0
-  if (!blink) items.push({ y: p.y + 12, draw: () => drawNino(ctx, p.x, p.y + 12, g.t, p.walking, p.facing) })
+  const attackProg = p.attackT > 0 ? 1 - p.attackT / ATTACK_TIME : -1
+  if (!blink)
+    items.push({ y: p.y + 12, draw: () => drawNino(ctx, p.x, p.y + 12, g.t, p.walking, p.facing, 1, attackProg) })
 
   items.sort((a, b) => a.y - b.y)
   for (const it of items) it.draw()
@@ -221,24 +223,20 @@ function drawTrevoItem(ctx: CanvasRenderingContext2D, x: number, y: number, t: n
 }
 
 function drawAttack(ctx: CanvasRenderingContext2D, g: Game) {
+  // o bastão em si gira na mão do nino (drawNino); aqui ficam só o rastro e o impacto
   const p = g.player
   if (p.attackT <= 0) return
   const prog = 1 - p.attackT / ATTACK_TIME
   const [ax, ay] = g.attackPoint()
   ctx.save()
   ctx.globalAlpha = 1 - prog * 0.7
-  // arco do golpe
   const baseAngle = p.facing === 'up' ? -Math.PI / 2 : p.facing === 'down' ? Math.PI / 2 : p.facing === 'left' ? Math.PI : 0
-  ctx.strokeStyle = PAL.wood
-  ctx.lineWidth = 4
-  ctx.lineCap = 'round'
-  ctx.beginPath()
-  ctx.arc(p.x, p.y - 14, TILE * 0.95, baseAngle - 0.9 + prog * 1.1, baseAngle - 0.2 + prog * 1.1)
-  ctx.stroke()
+  // p/ 'left' o bastão é espelhado (gira anti-horário na tela) — o rastro acompanha
+  const dir = p.facing === 'left' ? -1 : 1
   ctx.strokeStyle = PAL.pencilSoft
   ctx.lineWidth = 1.6
   ctx.beginPath()
-  ctx.arc(p.x, p.y - 14, TILE * 0.78, baseAngle - 0.8 + prog * 1.1, baseAngle - 0.25 + prog * 1.1)
+  ctx.arc(p.x, p.y - 14, TILE * 0.82, baseAngle + dir * (-0.8 + prog * 1.1), baseAngle + dir * (-0.25 + prog * 1.1), dir < 0)
   ctx.stroke()
   // estrelinha no ponto do impacto
   if (prog < 0.4) {
@@ -294,6 +292,13 @@ function drawNpcPrompt(ctx: CanvasRenderingContext2D, g: Game) {
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillText('e', n.x, n.y - 51 + bob)
+  // amizade da canela: coraçõezinhos na cor do nível atual da bandana
+  if (n.id === 'canela') {
+    for (let i = 0; i < AMIZADE_MAX; i++) {
+      const hx = n.x + (i - (AMIZADE_MAX - 1) / 2) * 11
+      sketchHeart(ctx, hx, n.y - 70 + bob, 4, 61 + i, i < g.amizade, AMIZADE_CORES[g.amizade])
+    }
+  }
 }
 
 // ---- HUD ----
@@ -341,7 +346,7 @@ function drawDialogue(ctx: CanvasRenderingContext2D, g: Game) {
   const y = VIEW_H - boxH - 14
   sketchRect(ctx, 14, y, VIEW_W - 28, boxH, 80, PAL.banner, PAL.pencil, 2.4)
 
-  drawPortrait(ctx, line.who, 58, y + boxH / 2)
+  drawPortrait(ctx, line.who, 58, y + boxH / 2, g.amizade)
 
   ctx.fillStyle = line.who === 'canela' ? PAL.foxOrange : line.who === 'nino' ? PAL.ninoHoodRim : PAL.foxBand
   ctx.font = `bold 15px ${FONT}`

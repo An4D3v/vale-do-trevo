@@ -9,7 +9,7 @@ export const NPC_NAMES: Record<NpcId | 'nino', string> = {
   lesma: 'dona lesma',
 }
 
-export function dialogueFor(npc: NpcId, stage: QuestStage, trevos: number): DialogueLine[] {
+export function dialogueFor(npc: NpcId, stage: QuestStage, trevos: number, amizade = 0): DialogueLine[] {
   if (npc === 'canela') {
     if (stage === 'pre') {
       return [
@@ -38,12 +38,23 @@ export function dialogueFor(npc: NpcId, stage: QuestStage, trevos: number): Dial
       return [
         { who: 'canela', text: `já achou ${trevos} de ${TOTAL_TREVOS} trevos! tá indo super bem.` },
         { who: 'canela', text: 'os que faltam devem estar na floresta ou com os borrões das pedras do sul.' },
+        { who: 'canela', text: 'e repara na minha bandana... ela muda de cor conforme a nossa amizade cresce!' },
       ]
     }
-    return [
+    // capítulo completo
+    const fim: DialogueLine[] = [
       { who: 'canela', text: 'o vale tá colorido de novo graças a você. 💚' },
       { who: 'canela', text: 'descansa um pouco! no próximo capítulo a gente descobre de onde veio o borrão gigante...' },
     ]
+    if (amizade >= 5) {
+      fim.push({ who: 'canela', text: 'e olha a bandana: ROXA! essa cor eu guardo pro meu melhor amigo. 💜' })
+    } else {
+      fim.push({
+        who: 'canela',
+        text: 'derrotar borrões deixa o vale mais seguro — e nossa amizade mais forte. de olho na cor da bandana!',
+      })
+    }
+    return fim
   }
 
   // dona lesma

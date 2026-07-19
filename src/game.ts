@@ -12,6 +12,8 @@ import {
   BLOB_SIGHT,
   BLOB_RESPAWN,
   TOTAL_TREVOS,
+  AMIZADE_MAX,
+  AMIZADE_CORES,
 } from './constants'
 import { buildWorld, canStand, insideRocky } from './world'
 import { dialogueFor } from './dialogue'
@@ -48,6 +50,8 @@ export class Game {
   questStage: QuestStage = 'pre'
   trevoCount = 0
   blobTrevoDrops = 0 // trevos que já caíram de borrão (2 no total)
+  amizade = 0 // nível de amizade com a canela (0..5) — muda a cor da bandana dela
+  blobsMortos = 0
   celebrated = false
   faintT = 0
   nearNpc: NpcId | null = null
@@ -155,15 +159,45 @@ export class Game {
     if (npc === 'canela') {
       if (this.questStage === 'pre') {
         this.questStage = 'active'
+        this.gainAmizade(1) // aceitou ajudar: a canela já gosta de você
       } else if (this.questStage === 'active' && this.trevoCount >= TOTAL_TREVOS) {
         this.questStage = 'done'
         this.celebrate()
+        this.gainAmizade(2) // salvou o vale!
       }
     }
   }
 
   private startDialogue(npc: NpcId) {
-    this.dialogue = { open: true, npc, lines: dialogueFor(npc, this.questStage, this.trevoCount), idx: 0, chars: 0 }
+    this.dialogue = {
+      open: true,
+      npc,
+      lines: dialogueFor(npc, this.questStage, this.trevoCount, this.amizade),
+      idx: 0,
+      chars: 0,
+    }
+  }
+
+  /** amizade com a canela: a bandana dela evolui pelo arco-íris */
+  private gainAmizade(n: number) {
+    const antes = this.amizade
+    this.amizade = Math.min(AMIZADE_MAX, this.amizade + n)
+    if (this.amizade === antes) return
+    const p = this.player
+    this.toast(p.x, p.y - 56, `amizade com a canela: nível ${this.amizade}!`)
+    for (let i = 0; i < 10; i++) {
+      const a = Math.random() * Math.PI * 2
+      this.particles.push({
+        x: p.x,
+        y: p.y - 24,
+        vx: Math.cos(a) * 40,
+        vy: Math.sin(a) * 40 - 55,
+        life: 0.6 + Math.random() * 0.4,
+        maxLife: 1,
+        size: 2.5 + Math.random() * 2,
+        color: AMIZADE_CORES[this.amizade],
+      })
+    }
   }
 
   private celebrate() {
@@ -245,6 +279,12 @@ export class Game {
         size: 2.5 + Math.random() * 3,
         color: '#57506b',
       })
+    }
+    // limpar o vale aproxima vocês: a cada 2 borrões, a amizade cresce
+    // (só depois de conhecer a canela — antes da missão não existe laço ainda)
+    if (this.questStage !== 'pre') {
+      this.blobsMortos++
+      if (this.blobsMortos % 2 === 0) this.gainAmizade(1)
     }
     // os 2 primeiros borrões derrotados soltam trevo
     if (this.blobTrevoDrops < 2) {

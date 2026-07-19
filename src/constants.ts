@@ -66,3 +66,8 @@ export const BLOB_SIGHT = 4.5 * TILE
 export const BLOB_RESPAWN = 25
 
 export const TOTAL_TREVOS = 6
+
+// evolução da canela: a bandana percorre o arco-íris conforme a amizade cresce
+// (nível 5 = roxa, a cor do desenho original)
+export const AMIZADE_MAX = 5
+export const AMIZADE_CORES = ['#e05263', '#e8702a', '#f4c95d', '#4caf50', '#39c0ed', '#8e44ad'] as const

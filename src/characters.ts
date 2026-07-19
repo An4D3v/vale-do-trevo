@@ -1,7 +1,7 @@
 // os personagens, desenhados à mão em canvas a partir da arte original:
 // nino (ninja gorducho de trevo na cabeça) e canela (raposa de bandana).
 
-import { PAL } from './constants'
+import { PAL, AMIZADE_CORES } from './constants'
 import { sketchEllipse, sketchPoly, sketchRect, sketchLine, rng } from './sketch'
 import type { Facing } from './types'
 
@@ -64,6 +64,7 @@ export function drawNino(
   walking: boolean,
   facing: Facing,
   seed = 1,
+  attackProg = -1, // 0..1 durante o golpe: o bastão sai das costas e gira na mão
 ) {
   const bob = walking ? Math.sin(t * 11) * 1.8 : Math.sin(t * 2.2) * 0.9
   const flip = facing === 'left' ? -1 : 1
@@ -82,8 +83,49 @@ export function drawNino(
   sketchEllipse(ctx, -7, -3 + step, 5, 4, seed + 5, PAL.ninoBodyDark, PAL.pencil, 1.6)
   sketchEllipse(ctx, 7, -3 - step, 5, 4, seed + 6, PAL.ninoBodyDark, PAL.pencil, 1.6)
 
-  // bastão nas costas (o corpo cobre o meio; sobram a ponta com lacinho e o cabo)
-  drawBastao(ctx, seed + 7)
+  // golpe: geometria do bastão girando (desenhado atrás do corpo no golpe pra cima,
+  // na frente nos demais — igual um golpe de verdade se comportaria)
+  let swing: (() => void) | null = null
+  let swingPivot: [number, number] | null = null
+  if (attackProg >= 0) {
+    let a0 = -2.4
+    let a1 = 0.5
+    if (facing === 'up') {
+      a0 = -3.0
+      a1 = -1.0
+    } else if (facing === 'down') {
+      a0 = 1.0
+      a1 = 2.8
+    }
+    const e = 1 - (1 - attackProg) * (1 - attackProg) // arrancada rápida, final suave
+    const ang = a0 + (a1 - a0) * e
+    const px = 8
+    const py = -20
+    const len = 36
+    const tipX = px + Math.cos(ang) * len
+    const tipY = py + Math.sin(ang) * len
+    swingPivot = [px, py]
+    swing = () => {
+      sketchLine(ctx, px, py, tipX, tipY, seed + 30, PAL.wood, 4, 0.8)
+      sketchLine(ctx, px, py, tipX, tipY, seed + 31, PAL.pencil, 1.1, 0.9)
+      // lacinho na ponta, acompanhando o giro
+      ctx.save()
+      ctx.translate(tipX, tipY)
+      ctx.rotate(ang + Math.PI / 2)
+      sketchEllipse(ctx, -3.8, -1, 3.2, 2.2, seed + 33, PAL.ninoHoodRim, PAL.pencil, 1.2)
+      sketchEllipse(ctx, 3, -1.8, 3.2, 2.2, seed + 34, PAL.ninoHoodRim, PAL.pencil, 1.2)
+      ctx.fillStyle = PAL.pencil
+      ctx.beginPath()
+      ctx.arc(-0.4, -1.2, 1.2, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.restore()
+    }
+  }
+
+  // bastão nas costas (o corpo cobre o meio; sobram a ponta com lacinho e o cabo).
+  // durante o golpe ele sai das costas e vai pra mão.
+  if (attackProg < 0) drawBastao(ctx, seed + 7)
+  else if (facing === 'up') swing?.() // golpe pra cima acontece atrás do nino
 
   // corpo gorducho de curvinhas
   sketchPoly(ctx, ninoBodyPts(0, -22), seed, PAL.ninoBody, PAL.pencil, 2.2)
@@ -136,11 +178,16 @@ export function drawNino(
   ctx.arc(2.2 + look, -31.4, 0.7, 0, Math.PI * 2)
   ctx.fill()
 
+  // golpe pra frente/lados: o bastão passa na frente do corpo; a mãozinha aparece sempre
+  if (swing && facing !== 'up') swing()
+  if (swingPivot) sketchEllipse(ctx, swingPivot[0], swingPivot[1], 3.4, 3, seed + 32, PAL.ninoBodyDark, PAL.pencil, 1.4)
+
   ctx.restore()
 }
 
-/** canela, a raposa de bandana roxa */
-export function drawCanela(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, seed = 2) {
+/** canela, a raposa — a cor da bandana evolui pelo arco-íris com a amizade (5 = roxa, a original) */
+export function drawCanela(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, seed = 2, amizade = 5) {
+  const banda = AMIZADE_CORES[Math.max(0, Math.min(5, amizade))]
   const sway = Math.sin(t * 1.8 + seed) * 1.2
   ctx.save()
   ctx.translate(x, y)
@@ -175,9 +222,9 @@ export function drawCanela(ctx: CanvasRenderingContext2D, x: number, y: number, 
 
   // cabeça
   sketchEllipse(ctx, 0, -26, 10.5, 9, seed + 8, PAL.foxOrange, PAL.pencil, 2.2)
-  // bandana roxa
-  sketchRect(ctx, -10, -31, 20, 4.5, seed + 9, PAL.foxBand, PAL.pencil, 1.6)
-  sketchLine(ctx, 10, -29, 15, -25, seed + 13, PAL.foxBand, 3, 1)
+  // bandana (cor = nível de amizade)
+  sketchRect(ctx, -10, -31, 20, 4.5, seed + 9, banda, PAL.pencil, 1.6)
+  sketchLine(ctx, 10, -29, 15, -25, seed + 13, banda, 3, 1)
   // focinho creme + nariz
   sketchEllipse(ctx, 0, -22.5, 5.5, 4.2, seed + 10, PAL.foxCream, PAL.pencil, 1.4)
   ctx.fillStyle = PAL.pencil
@@ -269,7 +316,13 @@ export function drawBlob(ctx: CanvasRenderingContext2D, x: number, y: number, t:
 
 // ---- retratos p/ caixa de diálogo ----
 
-export function drawPortrait(ctx: CanvasRenderingContext2D, who: 'nino' | 'canela' | 'lesma', cx: number, cy: number) {
+export function drawPortrait(
+  ctx: CanvasRenderingContext2D,
+  who: 'nino' | 'canela' | 'lesma',
+  cx: number,
+  cy: number,
+  amizade = 5,
+) {
   ctx.save()
   // moldura circular de papel
   sketchEllipse(ctx, cx, cy, 26, 26, 40, '#ffffff', PAL.pencil, 2.2)
@@ -298,7 +351,7 @@ export function drawPortrait(ctx: CanvasRenderingContext2D, who: 'nino' | 'canel
     sketchPoly(ctx, [[cx - 14, cy - 22], [cx - 5, cy - 8], [cx - 20, cy - 8]], 45, PAL.foxOrange, PAL.pencil, 2)
     sketchPoly(ctx, [[cx + 14, cy - 22], [cx + 20, cy - 8], [cx + 5, cy - 8]], 46, PAL.foxOrange, PAL.pencil, 2)
     sketchEllipse(ctx, cx, cy + 2, 17, 15, 47, PAL.foxOrange, PAL.pencil, 2)
-    sketchRect(ctx, cx - 16, cy - 7, 32, 6, 48, PAL.foxBand, PAL.pencil, 1.8)
+    sketchRect(ctx, cx - 16, cy - 7, 32, 6, 48, AMIZADE_CORES[Math.max(0, Math.min(5, amizade))], PAL.pencil, 1.8)
     sketchEllipse(ctx, cx, cy + 8, 9, 7, 49, PAL.foxCream, PAL.pencil, 1.4)
     ctx.fillStyle = PAL.pencil
     ctx.beginPath()

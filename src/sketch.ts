@@ -158,7 +158,7 @@ export function sketchLine(
   ctx.stroke()
 }
 
-/** coração desenhado à mão (HUD de vida) */
+/** coração desenhado à mão (HUD de vida, amizade) */
 export function sketchHeart(
   ctx: CanvasRenderingContext2D,
   cx: number,
@@ -166,6 +166,7 @@ export function sketchHeart(
   size: number,
   seed: number,
   filled: boolean,
+  color: string = PAL.heart,
 ) {
   const pts: [number, number][] = []
   const n = 22
@@ -176,5 +177,5 @@ export function sketchHeart(
     const hy = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t))
     pts.push([cx + (hx / 16) * size, cy + (hy / 16) * size])
   }
-  sketchPoly(ctx, pts, seed, filled ? PAL.heart : null, PAL.pencil, 2, 1.1)
+  sketchPoly(ctx, pts, seed, filled ? color : null, PAL.pencil, size < 6 ? 1.3 : 2, 1.1)
 }
